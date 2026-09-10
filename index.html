@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Misión Sistema Solar</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Arial,Helvetica,sans-serif;
+    background:radial-gradient(circle at 20% 20%,#283a8f 0,#11183f 35%,#070b20 100%);
+    color:#fff;min-height:100vh;overflow-x:hidden;
+  }
+  .stars{position:fixed;inset:0;pointer-events:none;opacity:.8}
+  .stars span{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%}
+  .app{max-width:1050px;margin:auto;padding:28px 18px 40px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px}
+  .brand{font-weight:800;font-size:20px}
+  .score{background:rgba(255,255,255,.12);padding:10px 15px;border-radius:16px;font-weight:700}
+  .screen{
+    display:none;background:rgba(255,255,255,.96);color:#17203f;
+    border-radius:28px;padding:34px;box-shadow:0 20px 60px rgba(0,0,0,.35);
+    min-height:620px;position:relative
+  }
+  .screen.active{display:block}
+  h1{font-size:48px;line-height:1.05;margin:10px 0 12px}
+  h2{font-size:34px;margin:4px 0 12px}
+  h3{font-size:23px;margin:8px 0}
+  p{font-size:19px;line-height:1.45}
+  .hero{text-align:center;padding-top:35px}
+  .rocket{font-size:86px}
+  .subtitle{max-width:700px;margin:0 auto 28px}
+  .btn{
+    border:0;border-radius:16px;padding:14px 22px;font-size:18px;font-weight:800;
+    cursor:pointer;margin:7px;transition:.15s;box-shadow:0 7px 0 rgba(20,30,75,.15)
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .primary{background:#5b57e8;color:#fff}
+  .secondary{background:#e7e9ff;color:#252b65}
+  .success{background:#2fbf71;color:#fff}
+  .danger{background:#ef5b67;color:#fff}
+  .mission-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:25px}
+  .mission{padding:20px;border-radius:20px;background:#f3f5ff;border:2px solid #dfe3ff}
+  .mission strong{display:block;font-size:22px;margin-bottom:7px}
+  .progress{height:12px;background:#dfe3ff;border-radius:20px;overflow:hidden;margin:15px 0 22px}
+  .progress > div{height:100%;background:#5b57e8;width:0%;transition:.25s}
+  .question{background:#f6f7fc;border-radius:20px;padding:20px;margin:17px 0}
+  .options{display:grid;gap:11px}
+  .option{
+    width:100%;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid #d9ddf2;
+    background:#fff;cursor:pointer;font-size:17px;font-weight:700;color:#20284e
+  }
+  .option:hover{background:#eef0ff;border-color:#7270ee}
+  .option.correct{background:#dff7e9;border-color:#2fbf71}
+  .option.wrong{background:#ffe3e6;border-color:#ef5b67}
+  .feedback{padding:15px;border-radius:15px;margin-top:14px;font-weight:700;display:none}
+  .feedback.show{display:block}
+  .feedback.ok{background:#dff7e9;color:#176b40}
+  .feedback.no{background:#ffe3e6;color:#8b1e2b}
+  .planets{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:20px 0}
+  .planet{
+    border:0;border-radius:18px;padding:13px 14px;background:#fff;box-shadow:0 5px 12px rgba(0,0,0,.1);
+    cursor:pointer;font-weight:800;color:#1c2348;min-width:118px
+  }
+  .planet .emoji{font-size:35px;display:block}
+  .planet.selected{outline:4px solid #5b57e8}
+  .order-slot{
+    min-height:62px;border:2px dashed #aeb5df;border-radius:15px;display:flex;align-items:center;
+    justify-content:center;font-weight:800;background:#fafbff
+  }
+  .order-list{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}
+  .order-item{padding:12px;background:#eef0ff;border-radius:14px;font-weight:800;text-align:center}
+  .match{display:grid;grid-template-columns:1fr 1fr;gap:13px;align-items:stretch}
+  .match .card{padding:16px;background:#f4f6ff;border-radius:16px}
+  .match select{width:100%;padding:11px;border-radius:12px;border:2px solid #d7dbef;font-size:16px;margin-top:8px}
+  .center{text-align:center}
+  .big-score{font-size:70px;font-weight:900;color:#5b57e8}
+  .badge{display:inline-block;padding:10px 16px;border-radius:30px;background:#ffdc66;color:#4a3a00;font-weight:900;font-size:18px}
+  .footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:25px;flex-wrap:wrap}
+  .small{font-size:15px;color:#69708d}
+  @media(max-width:750px){
+    h1{font-size:38px}.screen{padding:23px}.mission-grid,.match,.order-list{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="stars">
+  <span style="left:7%;top:12%"></span><span style="left:16%;top:36%"></span><span style="left:28%;top:8%"></span>
+  <span style="left:44%;top:21%"></span><span style="left:58%;top:11%"></span><span style="left:73%;top:32%"></span>
+  <span style="left:88%;top:13%"></span><span style="left:81%;top:63%"></span><span style="left:12%;top:78%"></span>
+  <span style="left:36%;top:88%"></span><span style="left:62%;top:79%"></span><span style="left:93%;top:84%"></span>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">🚀 Misión Sistema Solar</div>
+    <div class="score">Puntos: <span id="score">0</span> ⭐</div>
+  </div>
+
+  <section class="screen active" id="start">
+    <div class="hero">
+      <div class="rocket">🚀</div>
+      <h1>MISIÓN<br>SISTEMA SOLAR</h1>
+      <p class="subtitle">¡Conviértete en explorador espacial! Supera 4 misiones y demuestra cuánto sabes sobre el Sol y los ocho planetas.</p>
+      <button class="btn primary" onclick="show('instructions')">▶ COMENZAR MISIÓN</button>
+    </div>
+  </section>
+
+  <section class="screen" id="instructions">
+    <h2>📋 ¿Cómo jugar?</h2>
+    <p>Juega con un compañero. Lee cada reto, responde y revisa la retroalimentación. Si te equivocas, puedes intentarlo nuevamente.</p>
+    <div class="mission-grid">
+      <div class="mission"><strong>☀️ Misión 1</strong>Reconocer el Sol y los ocho planetas.</div>
+      <div class="mission"><strong>🪐 Misión 2</strong>Ordenar los planetas desde el Sol.</div>
+      <div class="mission"><strong>🔭 Misión 3</strong>Relacionar planetas con características básicas.</div>
+      <div class="mission"><strong>🌎 Misión 4</strong>Reconocer el movimiento de los planetas alrededor del Sol.</div>
+    </div>
+    <div class="center"><button class="btn primary" onclick="startGame()">🚀 EMPEZAR</button></div>
+  </section>
+
+  <section class="screen" id="m1">
+    <h2>☀️ Misión 1 — Exploradores del Sistema Solar</h2>
+    <div class="progress"><div id="p1"></div></div>
+    <div class="question">
+      <h3>Pregunta 1</h3>
+      <p>¿Cuántos planetas tiene el Sistema Solar?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,'m1f1')">A. 6</button>
+        <button class="option" onclick="answer(this,false,'m1f1')">B. 7</button>
+        <button class="option" onclick="answer(this,true,'m1f1')">C. 8</button>
+        <button class="option" onclick="answer(this,false,'m1f1')">D. 9</button>
+      </div>
+      <div class="feedback" id="m1f1"></div>
+    </div>
+    <div class="question">
+      <h3>Pregunta 2</h3>
+      <p>¿Cuál es la estrella que se encuentra en el centro del Sistema Solar?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,'m1f2')">A. La Luna</button>
+        <button class="option" onclick="answer(this,true,'m1f2')">B. El Sol</button>
+        <button class="option" onclick="answer(this,false,'m1f2')">C. Júpiter</button>
+        <button class="option" onclick="answer(this,false,'m1f2')">D. La Tierra</button>
+      </div>
+      <div class="feedback" id="m1f2"></div>
+    </div>
+    <div class="center">
+      <button class="btn success" onclick="show('m1b')">➡️ Continuar</button>
+    </div>
+  </section>
+
+  <section class="screen" id="m1b">
+    <h2>🪐 Reconoce los ocho planetas</h2>
+    <p>Haz clic en los ocho planetas. Debes seleccionar todos para completar el reto.</p>
+    <div class="planets" id="planetGrid"></div>
+    <div class="feedback" id="planetFeedback"></div>
+    <div class="center"><button class="btn success" onclick="goM2()">➡️ Siguiente misión</button></div>
+  </section>
+
+  <section class="screen" id="m2">
+    <h2>🪐 Misión 2 — Ordena los planetas</h2>
+    <div class="progress"><div style="width:50%"></div></div>
+    <p>Selecciona los planetas en orden, desde el más cercano al Sol hasta el más lejano.</p>
+    <div class="planets" id="orderChoices"></div>
+    <div class="order-list" id="chosen"></div>
+    <div class="feedback" id="orderFeedback"></div>
+    <div class="center">
+      <button class="btn secondary" onclick="resetOrder()">🔄 Reiniciar</button>
+      <button class="btn success" onclick="checkOrder()">✅ Comprobar</button>
+    </div>
+  </section>
+
+  <section class="screen" id="m3">
+    <h2>🔭 Misión 3 — Detectives planetarios</h2>
+    <div class="progress"><div style="width:75%"></div></div>
+    <div class="question">
+      <p><b>1.</b> ¿Cuál es el planeta más grande del Sistema Solar?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,'m3f1')">A. Marte</button>
+        <button class="option" onclick="answer(this,false,'m3f1')">B. Tierra</button>
+        <button class="option" onclick="answer(this,true,'m3f1')">C. Júpiter</button>
+        <button class="option" onclick="answer(this,false,'m3f1')">D. Venus</button>
+      </div><div class="feedback" id="m3f1"></div>
+    </div>
+    <div class="question">
+      <p><b>2.</b> ¿Cuál es el planeta en el que vivimos?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,'m3f2')">A. Venus</button>
+        <button class="option" onclick="answer(this,true,'m3f2')">B. Tierra</button>
+        <button class="option" onclick="answer(this,false,'m3f2')">C. Urano</button>
+        <button class="option" onclick="answer(this,false,'m3f2')">D. Neptuno</button>
+      </div><div class="feedback" id="m3f2"></div>
+    </div>
+    <div class="question">
+      <p><b>3.</b> ¿Cuáles son los cuatro planetas interiores o rocosos?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,true,'m3f3')">A. Mercurio, Venus, Tierra y Marte</button>
+        <button class="option" onclick="answer(this,false,'m3f3')">B. Júpiter, Saturno, Urano y Neptuno</button>
+        <button class="option" onclick="answer(this,false,'m3f3')">C. Venus, Marte, Saturno y Urano</button>
+        <button class="option" onclick="answer(this,false,'m3f3')">D. Mercurio, Júpiter, Urano y Neptuno</button>
+      </div><div class="feedback" id="m3f3"></div>
+    </div>
+    <div class="question">
+      <p><b>4.</b> Relaciona cada planeta con su característica.</p>
+      <div class="match">
+        <div class="card"><b>Mercurio</b><select id="match1"><option value="">Elige...</option><option value="1">Más cercano al Sol</option><option value="2">Planeta más grande</option><option value="3">Donde vivimos</option><option value="4">Tiene anillos visibles</option></select></div>
+        <div class="card"><b>Tierra</b><select id="match2"><option value="">Elige...</option><option value="1">Más cercano al Sol</option><option value="2">Planeta más grande</option><option value="3">Donde vivimos</option><option value="4">Tiene anillos visibles</option></select></div>
+        <div class="card"><b>Júpiter</b><select id="match3"><option value="">Elige...</option><option value="1">Más cercano al Sol</option><option value="2">Planeta más grande</option><option value="3">Donde vivimos</option><option value="4">Tiene anillos visibles</option></select></div>
+        <div class="card"><b>Saturno</b><select id="match4"><option value="">Elige...</option><option value="1">Más cercano al Sol</option><option value="2">Planeta más grande</option><option value="3">Donde vivimos</option><option value="4">Tiene anillos visibles</option></select></div>
+      </div>
+      <div class="feedback" id="m3f4"></div>
+      <div class="center"><button class="btn secondary" onclick="checkMatch()">✅ Comprobar relación</button></div>
+    </div>
+    <div class="center"><button class="btn success" onclick="show('m4')">➡️ Siguiente misión</button></div>
+  </section>
+
+  <section class="screen" id="m4">
+    <h2>🌎 Misión 4 — Movimiento planetario</h2>
+    <div class="progress"><div style="width:100%"></div></div>
+    <div class="question">
+      <p>¿Qué hacen los planetas alrededor del Sol?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,false,'m4f1')">A. Permanecen quietos.</button>
+        <button class="option" onclick="answer(this,true,'m4f1')">B. Se mueven alrededor del Sol.</button>
+        <button class="option" onclick="answer(this,false,'m4f1')">C. Se alejan constantemente del Sistema Solar.</button>
+        <button class="option" onclick="answer(this,false,'m4f1')">D. Giran alrededor de la Luna.</button>
+      </div><div class="feedback" id="m4f1"></div>
+    </div>
+    <div class="question">
+      <p>¿Por qué es importante el Sol dentro del Sistema Solar?</p>
+      <div class="options">
+        <button class="option" onclick="answer(this,true,'m4f2')">A. Es la estrella central y proporciona luz y energía.</button>
+        <button class="option" onclick="answer(this,false,'m4f2')">B. Es un planeta.</button>
+        <button class="option" onclick="answer(this,false,'m4f2')">C. Gira alrededor de la Luna.</button>
+        <button class="option" onclick="answer(this,false,'m4f2')">D. No tiene importancia.</button>
+      </div><div class="feedback" id="m4f2"></div>
+    </div>
+    <div class="center"><button class="btn success" onclick="finishGame()">🏆 Ver resultado</button></div>
+  </section>
+
+  <section class="screen" id="end">
+    <div class="center" style="padding-top:35px">
+      <div class="rocket">🏆</div>
+      <h1>¡MISIÓN CUMPLIDA!</h1>
+      <p>Terminaste los cuatro retos de Misión Sistema Solar.</p>
+      <div class="big-score" id="finalScore">0</div>
+      <div class="badge" id="badge">EXPLORADOR</div>
+      <p id="resultText"></p>
+      <button class="btn primary" onclick="location.reload()">🔄 VOLVER A JUGAR</button>
+    </div>
+  </section>
+</div>
+
+<script>
+let score=0, selectedPlanets=new Set(), order=[];
+const planets=[
+  ['Mercurio','☿️'],['Venus','🟡'],['Tierra','🌎'],['Marte','🔴'],
+  ['Júpiter','🟠'],['Saturno','🪐'],['Urano','🔵'],['Neptuno','🔵']
+];
+const correctOrder=planets.map(p=>p[0]);
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function startGame(){
+  show('m1');
+  document.getElementById('p1').style.width='25%';
+  buildPlanetGrid();
+}
+function answer(btn,correct,feedbackId){
+  const parent=btn.parentElement;
+  [...parent.children].forEach(x=>x.classList.remove('correct','wrong'));
+  btn.classList.add(correct?'correct':'wrong');
+  const f=document.getElementById(feedbackId);
+  f.className='feedback show '+(correct?'ok':'no');
+  f.textContent=correct?'🎉 ¡Correcto! ¡Sigue con la misión!':'🤔 Casi. Lee la pista y vuelve a intentarlo.';
+  if(correct && !btn.dataset.counted){score+=10;btn.dataset.counted='1';document.getElementById('score').textContent=score;}
+}
+function buildPlanetGrid(){
+  const grid=document.getElementById('planetGrid'); grid.innerHTML='';
+  planets.forEach(([name,emoji])=>{
+    const b=document.createElement('button');b.className='planet';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;
+    b.onclick=()=>{
+      if(selectedPlanets.has(name)){selectedPlanets.delete(name);b.classList.remove('selected')}
+      else{selectedPlanets.add(name);b.classList.add('selected')}
+      const f=document.getElementById('planetFeedback');
+      f.className='feedback show '+(selectedPlanets.size===8?'ok':'no');
+      f.textContent=selectedPlanets.size===8?'🌟 ¡Excelente! Reconociste los ocho planetas.':'Selecciona todos los planetas para completar el reto.';
+      if(selectedPlanets.size===8 && !window.p1done){score+=10;window.p1done=true;document.getElementById('score').textContent=score;}
+    };
+    grid.appendChild(b);
+  });
+}
+function goM2(){ if(selectedPlanets.size<8){alert('Primero completa el reto y selecciona los ocho planetas.');return;} show('m2'); buildOrderChoices(); }
+function buildOrderChoices(){
+  const g=document.getElementById('orderChoices');g.innerHTML='';
+  [...planets].sort(()=>Math.random()-.5).forEach(([name,emoji])=>{
+    const b=document.createElement('button');b.className='planet';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;
+    b.onclick=()=>{
+      if(order.length<8 && !order.includes(name)){order.push(name);b.disabled=true;b.style.opacity=.45;renderOrder();}
+    };g.appendChild(b);
+  });
+}
+function renderOrder(){document.getElementById('chosen').innerHTML=order.map((x,i)=>`<div class="order-item">${i+1}. ${x}</div>`).join('');}
+function resetOrder(){order=[];document.getElementById('orderFeedback').className='feedback';buildOrderChoices();renderOrder();}
+function checkOrder(){
+  const f=document.getElementById('orderFeedback');
+  if(order.length<8){f.className='feedback show no';f.textContent='🔭 Coloca los ocho planetas antes de comprobar.';return;}
+  const ok=order.every((x,i)=>x===correctOrder[i]);
+  f.className='feedback show '+(ok?'ok':'no');
+  f.textContent=ok?'🏆 ¡Misión superada! El orden es correcto.':'🔄 Hay algunos planetas fuera de lugar. Reinicia e inténtalo nuevamente.';
+  if(ok && !window.orderDone){score+=20;window.orderDone=true;document.getElementById('score').textContent=score;}
+}
+function checkMatch(){
+  const vals=[1,3,2,4].map(n=>document.getElementById('match'+n).value);
+  const f=document.getElementById('m3f4');
+  if(vals.some(v=>!v)){f.className='feedback show no';f.textContent='Completa las cuatro relaciones.';return;}
+  const ok=vals.join(',')==='1,3,2,4';
+  f.className='feedback show '+(ok?'ok':'no');
+  f.textContent=ok?'🎉 ¡Excelente! Todas las relaciones son correctas.':'🔄 Revisa las características e inténtalo de nuevo.';
+  if(ok && !window.matchDone){score+=10;window.matchDone=true;document.getElementById('score').textContent=score;}
+}
+function finishGame(){
+  show('end');document.getElementById('finalScore').textContent=score+' ⭐';
+  let badge,text;
+  if(score>=70){badge='🏆 EXPERTO DEL SISTEMA SOLAR';text='¡Gran trabajo! Reconociste, ordenaste y relacionaste los planetas y comprendiste su movimiento alrededor del Sol.';}
+  else if(score>=50){badge='🌟 GRAN EXPLORADOR';text='¡Muy bien! Has avanzado mucho. Repasa las misiones que quieras mejorar.';}
+  else if(score>=30){badge='🚀 SIGUE EXPLORANDO';text='¡Buen intento! Vuelve a jugar para reforzar lo aprendido.';}
+  else{badge='🔭 NUEVO EXPLORADOR';text='Vuelve a intentarlo y descubre más sobre nuestro Sistema Solar.';}
+  document.getElementById('badge').textContent=badge;document.getElementById('resultText').textContent=text;
+}
+</script>
+</body>
+</html>
